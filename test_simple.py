@@ -109,7 +109,7 @@ def test_simple(args):
     depth_decoder_path = os.path.join(model_path, "depth.pth")
 
     # LOADING PRETRAINED MODEL
-    print("   Loading pretrained encoder")
+    print("Loading pretrained encoder")
     encoder = networks.ResnetEncoder(18, False)
     loaded_dict_enc = torch.load(encoder_path, map_location=device)
 
@@ -146,9 +146,9 @@ def test_simple(args):
     print("-> Predicting on {:d} test images".format(len(paths)))
 
     # PREDICTING ON EACH IMAGE IN TURN
+    # not compute grad infor
     with torch.no_grad():
         for idx, image_path in enumerate(paths):
-
             if image_path.endswith("_disp.jpg"):
                 # don't try to predict disparity for a disparity image!
                 continue
@@ -171,6 +171,8 @@ def test_simple(args):
             # Saving numpy file  wendy change
             output_name = os.path.splitext(os.path.basename(image_path))[0]
             scaled_disp, depth = disp_to_depth(disp, 0.1, 100)
+            depth = torch.nn.functional.interpolate(
+                disp, (original_height, original_width), mode="bilinear", align_corners=False)
             if args.pred_metric_depth:
                 name_dest_npy = os.path.join(output_directory, "deNpy\{}_depth.npy".format(output_name))
                 metric_depth = STEREO_SCALE_FACTOR * depth.cpu().numpy()
@@ -183,29 +185,36 @@ def test_simple(args):
 
             # Saving colormapped depth image
             disp_resized_np = disp_resized.squeeze().cpu().numpy()
+            # wendy for depth
+            depth_resized_np = depth.squeeze().cpu().numpy()*100
             # wendy skip
             vmax = np.percentile(disp_resized_np, 95)
             normalizer = mpl.colors.Normalize(vmin=disp_resized_np.min(), vmax=vmax)
-            mapper = cm.ScalarMappable(norm=normalizer, cmap='gray')
+            mapper = cm.ScalarMappable(norm=normalizer, cmap='magma')
             colormapped_im = (mapper.to_rgba(disp_resized_np)[:, :, :3] * 255).astype(np.uint8)
-            # im = pil.fromarray(colormapped_im)
-
+            im = pil.fromarray(colormapped_im)
 
             output_name = os.path.splitext(os.path.basename(image_path))[0]
             name_dest_im = os.path.join(output_directory, "depth\{}.png".format(output_name))
             # # wendy add
-            im = pil.fromarray((disp_resized_np*255).astype(np.uint8))
+            # grey_im = linear_map(depth_resized_np, 0, 20)
+            # grey_im_1 = grey_im*255
+            # grey_im_11 = (grey_im*255).astype(np.uint8)
+            # grey_im_o0 = disp_resized_np * 255
+            # grey_im_o = (disp_resized_np*255).astype(np.uint8)
+            im = pil.fromarray((depth_resized_np*10).astype(np.uint8))
             im.save(name_dest_im)
             print("   Processed {:d} of {:d} images - saved predictions to:".format(
                 idx + 1, len(paths)))
             print("   - {}".format(name_dest_im))
-            #print("   - {}".format(name_dest_npy))
+            # print("   - {}".format(name_dest_npy))
 
     print('-> Done!')
 
+
 def generate_optical_flow(args):
     # 创建输出文件夹
-    #os.makedirs(output_folder, exist_ok=True)
+    # os.makedirs(output_folder, exist_ok=True)
     # 获取文件列表并按文件名排序
     file_list = sorted(os.listdir(args.input))
     args_s = argparse.Namespace()
@@ -215,11 +224,38 @@ def generate_optical_flow(args):
     args_s.ext = args.ext
     args_s.out = args.out
     for i in range(len(file_list)):
-        args_s.image_path = args.input + '/' +file_list[i]
+        args_s.image_path = args.input + '/' + file_list[i]
         test_simple(args_s)
 
 
+# 线性映射
+def linear_map_matrix(matrix, min, max):
+    # 找到矩阵中的最小值和最大值
+    min_value = min
+    max_value = max
+
+    # 确保最大值和最小值不相等，避免除以0的情况
+    if max_value == min_value:
+        max_value += 1
+
+    # 计算线性映射的值
+    mapped_matrix = (matrix - min_value) * 20 / (max_value - min_value)
+
+    return mapped_matrix.astype(np.uint8)
+
+
+# 最大最小归一化
+def min_max_normalize_with_outliers(arr, lower_percentile=0, upper_percentile=100):
+    # 计算上下分位数对应的值
+    lower_bound = np.percentile(arr, lower_percentile)
+    upper_bound = np.percentile(arr, upper_percentile)
+
+    # 剔除超出范围的异常值点，并进行最小-最大归一化
+    arr_clipped = np.clip(arr, lower_bound, upper_bound)
+    normalized_arr = (arr_clipped - lower_bound) / (upper_bound - lower_bound)
+    return normalized_arr
+
 if __name__ == '__main__':
     args = parse_args1()
-    #test_simple(args)
+    # test_simple(args)
     generate_optical_flow(args)
