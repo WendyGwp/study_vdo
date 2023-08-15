@@ -64,7 +64,8 @@ python renamebagpng.py
 cp image_1/00000{20..76}.png image1
 # 从0开始重命名 后缀名 初始值
 python rename.py ~/dataset/airsim/image_0/ .png 25
-
+# 生成时间戳文件
+python proessTime.py ~/share/data/airsim2.0/ 18 99
 
 ```
 
