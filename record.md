@@ -9,7 +9,7 @@ python test_simple.py --input ./assets/image_0/ --model mono+stereo_640x192 --ou
 ```
 2. pwc_net 用于处理光流信息
 ```bash
-github：https://github.com/sniklaus/pytorch-pwc.git
+git clone https://github.com/sniklaus/pytorch-pwc.git
 依赖：pytorch 
 pip install cupy-cuda11x
 # 运行
