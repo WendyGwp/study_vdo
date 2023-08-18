@@ -1,3 +1,73 @@
+# deeplab
+## 数据集
+参考：https://www.cnblogs.com/liuwenhua/p/15136361.html
+和原来的基本一致
+deeplab github: 
+1. 需要对中间生成的mask去colormap 使用Deeplab中的model/research/deeplab/dataset中的remove_gt_colormap.py
+python remove_gt_colormap.py --original_gt_folder ~/dataset/work_for_mask/train/SegmentationClass -output_dir ~/dataset/work_for_mask/mask
+
+2. 生成索引txt文件
+可以暂时将train 和 val 分开在两个目录中只要图片 图片的后缀名不会被记录
+
+
+
+3. 在deeplab目录中
+python build_voc2012_data.py --image_folder ~/dataset/work_for_mask/data/image/ --semantic_segmentation_folder ~/dataset/work_for_mask/data/mask/ --list_folder ~/dataset/work_for_mask/data/index/ --image_format png --output_dir ~/dataset/work_for_mask/data/tfrecord/
+生成tfcord格式
+
+```python
+import os,shutil
+from PIL import Image
+
+train_path = r'/home/ubuntu/dataset/work_for_mask/train'
+filelist_train = sorted(os.listdir(train_path))
+val_path = r'/home/ubuntu/dataset/work_for_mask/val'
+filelist_val = sorted(os.listdir(val_path))
+index_path = r'/home/ubuntu/dataset/work_for_mask/index'
+
+VOC_file_dir = index_path
+
+
+VOC_train_file = open(os.path.join(VOC_file_dir, "train.txt"), 'w')
+VOC_test_file = open(os.path.join(VOC_file_dir, "val.txt"), 'w')
+VOC_train_file.close()
+VOC_test_file.close()
+
+VOC_train_file = open(os.path.join(VOC_file_dir, "train.txt"), 'a')
+VOC_test_file = open(os.path.join(VOC_file_dir, "val.txt"), 'a')
+
+for eachfile in filelist_train:
+    (temp_name,temp_extention) = os.path.splitext(eachfile)
+    img_name = temp_name
+    VOC_train_file.write(img_name + '\n')
+
+for eachfile in filelist_val:
+    (temp_name, temp_extention) = os.path.splitext(eachfile)
+    img_name = temp_name
+    VOC_test_file.write(img_name + '\n')
+
+VOC_train_file.close()
+VOC_test_file.close()
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 # 遇到问题：
 1. maskrcnn训练提示：FutureWarning: Input image dtype is bool
 修改scikit-image包版本为0.16.2
@@ -22,16 +92,21 @@ pip install -U scikit-image==0.16.2
 # 过程
 1. labelme 打标签
 ```
+pip install pyqt5==5.15.0
 pip install labelme
 labelme images --output jsons --nodata --autosave --labels labels.txt
-
 ```
+其中labels.txt 需要自己写
+__ignore__
+_background_
+uav
 2. 使用python批处理数据
 ```
 python pyth.py --input_dir ~/dataset/mask_data1/jsons/ --output_dir ~/dataset/mask_train/ --labels ~/dataset/mask_data1/labels.txt 
 python json_to_dataset.py
 
 ```
+
 
 # 查看结果
 
