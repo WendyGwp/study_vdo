@@ -2,7 +2,7 @@
 ## 数据集
 参考：https://www.cnblogs.com/liuwenhua/p/15136361.html
 和原来的基本一致
-deeplab github: 
+deeplab github: https://github.com/tensorflow/models/tree/master/research/deeplab
 1. 需要对中间生成的mask去colormap 使用Deeplab中的model/research/deeplab/dataset中的remove_gt_colormap.py
 python remove_gt_colormap.py --original_gt_folder ~/dataset/work_for_mask/train/SegmentationClass -output_dir ~/dataset/work_for_mask/mask
 
