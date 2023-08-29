@@ -24,6 +24,7 @@ python flow2image.py  ~/dataset//mono_uav/uav_test/flow ~/dataset/mono_uav/uav_t
 ```
 
 4. mask rcnn 处理语义
+git clone https://github.com/matterport/Mask_RCNN.git
 pip install tensorflow==1.14.0 keras==2.1.6 h5py==2.10.0 protobuf==3.20.0
 pip3 install -r requirements.txt
 python3 setup.py install
@@ -49,6 +50,7 @@ python rename.py ~/dataset/act_data/image_0/ .png 25
 ```
 
 6. spsstereo 处理双目深度
+路径：https://home.ttic.edu/~dmcallester/SPS/
 ```
 # 在深度图所在文件夹内运行
 ~/code/VDO/spsstereo/build/spsstereo  ~/dataset/airsim/images_0/ ~/dataset/airsim/images_1/
