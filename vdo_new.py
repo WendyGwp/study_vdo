@@ -6,6 +6,9 @@ from mrcnn.visualize import display_instances
 import numpy as np
 from keras.preprocessing.image import load_img
 from keras.preprocessing.image import img_to_array
+from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
+
+
 import argparse
 import matplotlib.pyplot as plt
 
@@ -14,12 +17,13 @@ class myMaskRCNNConfig(Config):
     GPU_COUNT = 1
     IMAGES_PER_GPU = 1
     NUM_CLASSES = 1 + 1
+    DETECTION_NMS_THRESHOLD = 0.3
 
 
 config = myMaskRCNNConfig()
 print("Loading weights for Mask R-CNN model...")
 model = modellib.MaskRCNN(mode="inference", config=config, model_dir='./')
-model.load_weights('mask_rcnn_shapes_0037.h5', by_name=True)
+model.load_weights('/home/ubuntu/code/vdo/study_vdo/mask_rcnn_shapes_0100.h5', by_name=True)
 class_names = ['bg','uav']
 # 路径
 gen_path ='./carmera/'
@@ -30,6 +34,54 @@ rois = {}  # 存储所有帧上检测到的物体的 rois
 object_num = 0
 current_obj = []
 fram = -1
+# wendy change r
+def filter_and_keep_best_detections(r):
+    """
+    对每个物体保留与 rois 相交的框中检测分数最高的框。
+
+    Parameters:
+        r (dict): 检测结果字典.
+    
+    Returns:
+        dict: 修改后的检测结果字典.
+    """
+    new_rois = []
+    new_masks = []
+    new_class_ids = []
+    new_scores = []
+
+    # 对每个检测结果进行处理
+    for roi, mask, class_id, score in zip(r['rois'], r['masks'], r['class_ids'], r['scores']):
+        best_overlap = 0
+        best_roi_index = None
+
+        # 寻找与当前框相交的 rois
+        for i, existing_roi in enumerate(new_rois):
+            overlap = calculate_iou(roi, existing_roi)
+            if overlap > best_overlap:
+                best_overlap = overlap
+                best_roi_index = i
+
+        if best_roi_index is not None:
+            # 如果存在与当前框相交的 rois，检查分数并保留最高分数的框
+            if score > new_scores[best_roi_index]:
+                new_rois[best_roi_index] = roi
+                new_masks[best_roi_index] = mask
+                new_class_ids[best_roi_index] = class_id
+                new_scores[best_roi_index] = score
+        else:
+            # 如果不存在与当前框相交的 rois，添加当前框到新的列表中
+            new_rois.append(roi)
+            new_masks.append(mask)
+            new_class_ids.append(class_id)
+            new_scores.append(score)
+
+    # 更新检测结果
+    r['rois'] = np.array(new_rois)
+    r['masks'] = np.array(new_masks)
+    r['class_ids'] = np.array(new_class_ids)
+    r['scores'] = np.array(new_scores)
+    return r
 
 
 #wendy caclulate iou
@@ -50,6 +102,8 @@ def calculate_iou(roi1, roi2):
     
     # 计算交/小
     iou = intersection / min(area1,area2)
+    # 交比并 
+    # iou = intersection /union
     
     return iou
 
@@ -130,6 +184,10 @@ def tar_all(gen_path):
     input_folder = gen_path + 'image_0'  # 输入文件夹路径
     output_folder =gen_path + 'mask'  # 输出文件夹路径
     obj_name = gen_path + 'object_pose.txt'
+    # 在 tar_all 函数开头添加这段代码
+    mask_img_folder = os.path.join(gen_path, 'mask_img')
+    os.makedirs(mask_img_folder, exist_ok=True)
+
     global fram,current_obj,object_num,r
     for filename in sorted(os.listdir(input_folder)):
         fram += 1
@@ -144,15 +202,27 @@ def tar_all(gen_path):
             # 进行预测
             results = model.detect([image], verbose=0)
             r = results[0]
-            
+           # r = filter_and_keep_best_detections(r)
             classes = r['class_ids']
             #print("Total Objects found:", len(classes))
             """ for i in range(len(classes)):
                 print(class_names[classes[i]]) """
             
             # 可视化语义分割结果
-            display_instances(image,r['rois'],r['masks'],r['class_ids'],class_names,r['scores'])
+            # display_instances(image,r['rois'],r['masks'],r['class_ids'],class_names,r['scores'])
+            # 可视化语义分割结果
+            fig, ax = plt.subplots()
+            display_instances(image, r['rois'], r['masks'], r['class_ids'], class_names, r['scores'], ax=ax)
+            
+            # 保存可视化结果图像
+            mask_show_filename = filename + '.visual.png'
+            mask_show_path = os.path.join(mask_img_folder, mask_show_filename)
+            
+            canvas = FigureCanvas(fig)
+            canvas.print_png(mask_show_path)
+            plt.close(fig)  # 关闭图像以防止显示
 
+ 
             # 将检测到的物体的 rois 存储到数组中
             # 检测和上帧中储存障碍物的距离 重构 字典
             if not rois: 

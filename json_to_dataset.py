@@ -23,7 +23,7 @@ def main():
     parser = argparse.ArgumentParser()
     ###############################################增加的语句##############################
     # parser.add_argument("json_file")
-    parser.add_argument("--json_dir", default="/home/wendy/dataset/mask_data1/jsons")
+    parser.add_argument("--json_dir", default="/home/ubuntu/dataset/mask/jsons2")
     ###############################################end###################################
     parser.add_argument("-o", "--out", default=None)
     args = parser.parse_args()
