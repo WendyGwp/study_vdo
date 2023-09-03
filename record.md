@@ -28,9 +28,8 @@ git clone https://github.com/matterport/Mask_RCNN.git
 pip install tensorflow==1.14.0 keras==2.1.6 h5py==2.10.0 protobuf==3.20.0
 pip3 install -r requirements.txt
 python3 setup.py install
-
-requirements.txt 改成以下
 ```
+# requirements.txt 改成以下
 numpy
 scipy
 Pillow
